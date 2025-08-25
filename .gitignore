@@ -1,0 +1,21 @@
+# Android / Gradle
+/android/.gradle/
+/android/.idea/
+/android/local.properties
+/android/**/build/
+/android/**/captures/
+/android/**/.cxx/
+/android/**/google-services.json
+
+# CMake build dirs
+/pi/build/
+/pi/out/
+
+# General
+.DS_Store
+Thumbs.db
+
+
+/videos/
+/samples/
+/assets/
