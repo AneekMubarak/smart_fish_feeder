@@ -50,7 +50,6 @@ void FeedDispenser::dispense(){
     }
     
     gpiod_line_set_value(m_driver_line,OFF);
-    std::cout<< "driver_off\n";
 }
 
 
