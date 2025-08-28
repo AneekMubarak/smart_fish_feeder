@@ -21,6 +21,9 @@ private:
 	int getHour(const std::chrono::system_clock::time_point& tp) const;
 	int getMinute(const std::chrono::system_clock::time_point& tp) const;
 	int getSecond(const std::chrono::system_clock::time_point& tp) const;
+	
+	int verify_hour(int hour) const;
+	int verify_minute(int minute) const;
 
 
 	

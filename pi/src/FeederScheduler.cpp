@@ -1,5 +1,7 @@
 
 #include "../includes/FeederScheduler.hpp"
+
+#include <chrono>
 #include <ctime>
 
 // allows to set a time interval for feeding in the format of hours:minutes
@@ -25,14 +27,25 @@ FeederScheduler::FeederScheduler()
 
 // SETTERS
 void FeederScheduler::update_feed_interval(int hour,int minute){
-	interval.set_interval(hour,minute);
+	int hr = verify_hour(hour);
+	interval.set_interval_hour(hr);
+	
+	
+	int min = verify_minute(minute);
+	interval.set_interval_minute(min);
+
 	next_feed_time = get_next_feeding_time();
 
 }
 
 
 void FeederScheduler::update_feed_interval (int hour){
-	interval.set_interval_hour(hour);
+	int hr = verify_hour(hour);
+	interval.set_interval_hour(hr);
+	
+	int min = verify_minute(interval.get_interval_minute());
+	interval.set_interval_minute(min);
+
 	next_feed_time = get_next_feeding_time();
 
 }
@@ -93,29 +106,66 @@ std::chrono::system_clock::time_point FeederScheduler::get_next_feeding_time() c
 	
 }
 
-#include <chrono>
-#include <ctime>
+
 
 int FeederScheduler::getHour(const std::chrono::system_clock::time_point& tp) const {
-    std::time_t t = std::chrono::system_clock::to_time_t(tp);
-    std::tm tm{};
-    localtime_r(&t, &tm);   
-    return tm.tm_hour; // 0 to 23
+	std::time_t t = std::chrono::system_clock::to_time_t(tp);
+	std::tm tm{};
+	localtime_r(&t, &tm);   
+	return tm.tm_hour; // 0 to 23
 }
 
 int FeederScheduler::getMinute(const std::chrono::system_clock::time_point& tp) const {
-    std::time_t t = std::chrono::system_clock::to_time_t(tp);
-    std::tm tm{};
-    localtime_r(&t, &tm);
-    return tm.tm_min;  // 0 to 59
+	std::time_t t = std::chrono::system_clock::to_time_t(tp);
+	std::tm tm{};
+	localtime_r(&t, &tm);
+	return tm.tm_min;  // 0 to 59
 }
 
 int FeederScheduler::getSecond(const std::chrono::system_clock::time_point& tp) const {
-    std::time_t t = std::chrono::system_clock::to_time_t(tp);
-    std::tm tm{};
-    localtime_r(&t, &tm);
-    return tm.tm_sec;  // 0 to 59
+	std::time_t t = std::chrono::system_clock::to_time_t(tp);
+	std::tm tm{};
+	localtime_r(&t, &tm);
+	return tm.tm_sec;  // 0 to 59
 }
+
+int FeederScheduler::verify_hour(int hour) const{
+	if(hour >= 25){return 0;} // Max interval is once every 24 hours
+	else{return hour;}
+	    
+}
+
+
+int FeederScheduler::verify_minute(int minute) const{
+	int hour = interval.get_interval_hour();
+	if (hour == 24 || minute >= 60){return 0;}
+	else if (hour == 0 && minute == 0){return 1;} //prevent infinite servo moment
+	else {return minute;}
+	
+}
+
+
+//~ void increment_hour(int* curr_hour, int* curr_min){
+    
+    //~ if (*(curr_hour) == 24){ // will make time 00:00 --> infinite case
+        //~ *(curr_min) = 1;
+        //~ *(curr_hour) = 0;
+    //~ }
+    
+    //~ else if ((*curr_hour) == 23){
+        //~ ++*(curr_hour);
+        //~ *(curr_min) = 0;
+    //~ }
+    
+    //~ else if (*(curr_hour) < 23) {
+        //~ ++*(curr_hour);
+        
+    //~ }else {
+        //~ *(curr_hour) = 0;
+    //~ }
+    
+//~ }
+
 
 
 
