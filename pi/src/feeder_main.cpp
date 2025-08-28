@@ -4,6 +4,7 @@
 
 #include "../includes/FeedDispenser.hpp"
 #include "../includes/FeederScheduler.hpp"
+#include "../includes/ButtonReader.hpp"
 
     
 
@@ -14,33 +15,19 @@
 #define ON 1
 #define OFF 0
 
-//~ std::chrono::seconds feed_interval_sec{15};
-std::chrono::system_clock::time_point last_feed_time = std::chrono::system_clock::now();
 
-int checkSchedule(std::chrono::seconds sec){
 
-    
-    
-    auto now = std::chrono::system_clock::now();
-    
-    auto next_feed_time = last_feed_time + sec;
-    
-    if(now >= next_feed_time){
-        last_feed_time = now;
-        return 1;
-    }
-    
-    return 0;
-}
+//~ void increment_hour(int* curr_hour, int* curr_min);
 
 int main(){
 
     const char* chipname = "gpiochip4";
     const unsigned int servo_line_num = 22;
     const unsigned int motor_driver_en_line_num= 17;
+    const unsigned int hour_sw_num = 27;
+    const unsigned int minute_sw_num = 5;
 
     
-
     gpiod_chip* chip = gpiod_chip_open_by_name(chipname);
     if(!chip){
         std::cerr<<"Failed to open chip\n";
@@ -49,6 +36,10 @@ int main(){
 
     gpiod_line* servoLine = gpiod_chip_get_line(chip,servo_line_num);
     gpiod_line* motor_driver_en_line = gpiod_chip_get_line(chip,motor_driver_en_line_num);
+    gpiod_line* hour_sw_line = gpiod_chip_get_line(chip,hour_sw_num);
+    gpiod_line* minute_sw_line = gpiod_chip_get_line(chip,minute_sw_num);
+
+
 
 
     if(!servoLine){
@@ -76,15 +67,40 @@ int main(){
         return 1;
     }
     
+    
+    if(!hour_sw_line){
+        std::cerr << "Failed to get line\n";
+        gpiod_chip_close(chip);
+        return 1;
+    }
 
+    if (gpiod_line_request_input(hour_sw_line, "fish_feeder") < 0) {
+        std::cerr << "Failed to request line as input\n";
+        gpiod_chip_close(chip);
+        return 1;
+    }
+    
+    
+    if(!minute_sw_line){
+        std::cerr << "Failed to get line\n";
+        gpiod_chip_close(chip);
+        return 1;
+    }
+
+    if (gpiod_line_request_input(minute_sw_line, "fish_feeder") < 0) {
+        std::cerr << "Failed to request line as input1\n";
+        gpiod_chip_close(chip);
+        return 1;
+    }
     
 
-    std::cout<<"Testing\n";
     
-    FeedDispenser d1 {servoLine,motor_driver_en_line};
-    FeederScheduler scheduler {0,1};
-            //~ std::cout << "Next Feeding Time is " <<scheduler.get_next_feeding_time_hour() 
-            //~ << ":" <<scheduler.get_next_feeding_time_minute() <<":" <<scheduler.get_next_feeding_time_second() << "\n";
+    FeedDispenser d1 {servoLine,motor_driver_en_line};    
+    FeederScheduler scheduler {};
+    ButtonReader hour_button {hour_sw_line};
+    ButtonReader minute_button {minute_sw_line};
+
+    
             
     auto printNextFeedingTime = [&scheduler]() {
     std::cout << "Next Feeding Time is "
@@ -92,21 +108,42 @@ int main(){
               << scheduler.get_next_feeding_time_minute() << ":"
               << scheduler.get_next_feeding_time_second()
               << "\n";
-    };
+    }
     
     printNextFeedingTime();
+    
+    //~ std::cout << "Interval: " << scheduler.get_interval_hour() <<":"<<scheduler.get_interval_minute()<<"\n";
+
+    
+    int interval_hour{};
+    int interval_minute{};
 
     
     while(1){
         
+        interval_hour = scheduler.get_interval_hour();
+        interval_minute = scheduler.get_interval_minute();
         
         
+        
+        if(hour_button.is_valid_press()){
+            scheduler.update_feed_interval(++interval_hour,interval_minute);                
+
+        }
+        
+        if(minute_button.is_valid_press()){
+            scheduler.update_feed_interval(interval_hour,++interval_minute);
+
+        }
+        
+
+
+
         if (scheduler.interval_elapsed()){
             d1.dispense();
             printNextFeedingTime();
         }
-        
-        
+    
     }
 
 
@@ -114,14 +151,11 @@ int main(){
 
     gpiod_line_release(servoLine);
     gpiod_line_release(motor_driver_en_line);
-
-
     gpiod_chip_close(chip);
     return 0;
-
-
-
-
-
     
 }
+
+
+
+
