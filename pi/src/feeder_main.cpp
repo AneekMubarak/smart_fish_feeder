@@ -1,9 +1,11 @@
-#include "../includes/FeedDispenser.hpp"
 #include <iostream>
 #include <string>
 #include <string_view>
 
+#include "../includes/FeedDispenser.hpp"
+#include "../includes/FeederScheduler.hpp"
 
+    
 
 #include <gpiod.h>
 #include <thread>
@@ -12,10 +14,24 @@
 #define ON 1
 #define OFF 0
 
-//~ void motor_driver(gpiod_line* line, int val){
-        //~ gpiod_line_set_value(line,val);
-        
-//~ }
+//~ std::chrono::seconds feed_interval_sec{15};
+std::chrono::system_clock::time_point last_feed_time = std::chrono::system_clock::now();
+
+int checkSchedule(std::chrono::seconds sec){
+
+    
+    
+    auto now = std::chrono::system_clock::now();
+    
+    auto next_feed_time = last_feed_time + sec;
+    
+    if(now >= next_feed_time){
+        last_feed_time = now;
+        return 1;
+    }
+    
+    return 0;
+}
 
 int main(){
 
@@ -41,7 +57,7 @@ int main(){
         return 1;
     }
 
-    if (gpiod_line_request_output(servoLine, "servo", 0) < 0) {
+    if (gpiod_line_request_output(servoLine, "fish_feeder", 0) < 0) {
         std::cerr << "Failed to request line as output\n";
         gpiod_chip_close(chip);
         return 1;
@@ -54,27 +70,44 @@ int main(){
         return 1;
     }
 
-    if (gpiod_line_request_output(motor_driver_en_line, "motor_driver", 0) < 0) {
+    if (gpiod_line_request_output(motor_driver_en_line, "fish_feeder", 0) < 0) {
         std::cerr << "Failed to request line as output\n";
         gpiod_chip_close(chip);
         return 1;
     }
     
+
     
 
     std::cout<<"Testing\n";
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    
     FeedDispenser d1 {servoLine,motor_driver_en_line};
-    d1.dispense();
-
-
-
-
-
+    FeederScheduler scheduler {0,1};
+            //~ std::cout << "Next Feeding Time is " <<scheduler.get_next_feeding_time_hour() 
+            //~ << ":" <<scheduler.get_next_feeding_time_minute() <<":" <<scheduler.get_next_feeding_time_second() << "\n";
+            
+    auto printNextFeedingTime = [&scheduler]() {
+    std::cout << "Next Feeding Time is "
+              << scheduler.get_next_feeding_time_hour() << ":"
+              << scheduler.get_next_feeding_time_minute() << ":"
+              << scheduler.get_next_feeding_time_second()
+              << "\n";
+    };
+    
+    printNextFeedingTime();
 
     
-    
-
+    while(1){
+        
+        
+        
+        if (scheduler.interval_elapsed()){
+            d1.dispense();
+            printNextFeedingTime();
+        }
+        
+        
+    }
 
 
 
