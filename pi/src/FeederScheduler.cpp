@@ -31,7 +31,9 @@ void FeederScheduler::update_feed_interval(int hour,int minute){
 	interval.set_interval_hour(hr);
 	
 	
-	int min = verify_minute(minute);
+	int min = verify_minute(
+		
+	);
 	interval.set_interval_minute(min);
 
 	next_feed_time = get_next_feeding_time();
@@ -137,34 +139,15 @@ int FeederScheduler::verify_hour(int hour) const{
 
 
 int FeederScheduler::verify_minute(int minute) const{
-	int hour = interval.get_interval_hour();
-	if (hour == 24 || minute >= 60){return 0;}
-	else if (hour == 0 && minute == 0){return 1;} //prevent infinite servo moment
+	int hour = interval.get_interval_hour(); // verified hour
+
+	if (hour == 0 && (minute == 60 || minute == 0)){return 1;} //prevent infinite servo moment
+	else if (hour == 24 || minute >= 60){return 0;} 
 	else {return minute;}
 	
 }
 
 
-//~ void increment_hour(int* curr_hour, int* curr_min){
-    
-    //~ if (*(curr_hour) == 24){ // will make time 00:00 --> infinite case
-        //~ *(curr_min) = 1;
-        //~ *(curr_hour) = 0;
-    //~ }
-    
-    //~ else if ((*curr_hour) == 23){
-        //~ ++*(curr_hour);
-        //~ *(curr_min) = 0;
-    //~ }
-    
-    //~ else if (*(curr_hour) < 23) {
-        //~ ++*(curr_hour);
-        
-    //~ }else {
-        //~ *(curr_hour) = 0;
-    //~ }
-    
-//~ }
 
 
 
