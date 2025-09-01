@@ -2,22 +2,20 @@
 #include <string>
 #include <string_view>
 
-#include "../includes/FeedDispenser.hpp"
-#include "../includes/FeederScheduler.hpp"
-#include "../includes/ButtonReader.hpp"
-
-    
-
 #include <gpiod.h>
 #include <thread>
 #include <chrono>
+#include <array>
+
+#include "../includes/FeedDispenser.hpp"
+#include "../includes/FeederScheduler.hpp"
+#include "../includes/ButtonReader.hpp"
+#include "../includes/SevenSegmentDriver.hpp"
+
 
 #define ON 1
 #define OFF 0
 
-
-
-//~ void increment_hour(int* curr_hour, int* curr_min);
 
 int main(){
 
@@ -39,9 +37,6 @@ int main(){
     gpiod_line* hour_sw_line = gpiod_chip_get_line(chip,hour_sw_num);
     gpiod_line* minute_sw_line = gpiod_chip_get_line(chip,minute_sw_num);
 
-
-
-
     if(!servoLine){
         std::cerr << "Failed to get line\n";
         gpiod_chip_close(chip);
@@ -53,7 +48,6 @@ int main(){
         gpiod_chip_close(chip);
         return 1;
     }
-    
     
     if(!motor_driver_en_line){
         std::cerr << "Failed to get line\n";
@@ -92,14 +86,17 @@ int main(){
         gpiod_chip_close(chip);
         return 1;
     }
+
+    //Array Elements map to pins:  d1 d2 d3 d4 dp g f e d c b a
+    std::array <int,12> seven_seg_lines{6,13,19,26,21,20,16,12,25,24,23,18};
     
 
     
-    FeedDispenser d1 {servoLine,motor_driver_en_line};    
+    FeedDispenser dispenser {servoLine,motor_driver_en_line};      
     FeederScheduler scheduler {};
     ButtonReader hour_button {hour_sw_line};
     ButtonReader minute_button {minute_sw_line};
-
+    SevenSegmentDriver seven_seg_display{chip,seven_seg_lines}; // 4 digit seven segment display
     
             
     auto printNextFeedingTime = [&scheduler]() {
@@ -108,7 +105,7 @@ int main(){
               << scheduler.get_next_feeding_time_minute() << ":"
               << scheduler.get_next_feeding_time_second()
               << "\n";
-    }
+    };
     
     printNextFeedingTime();
     
@@ -124,37 +121,52 @@ int main(){
         interval_hour = scheduler.get_interval_hour();
         interval_minute = scheduler.get_interval_minute();
         
+        if(minute_button.isPressed() && hour_button.isPressed()){ // press both buttons together to show the next feeding time instead of the interval
+            // TO BE IMPLEMENTED
+            std::cout << "both\n";
+            
+            //prevent interval from incrementing in the case of a double press 
+            --interval_hour;
+            --interval_minute;
+        }
         
         
+        // Handle pressing the increment hour button
         if(hour_button.is_valid_press()){
             scheduler.update_feed_interval(++interval_hour,interval_minute);                
 
         }
         
+        // Handle pressing the increment minute button
         if(minute_button.is_valid_press()){
             scheduler.update_feed_interval(interval_hour,++interval_minute);
 
         }
         
+        
+        std::cout << "Interval: " << scheduler.get_interval_hour() <<":"<<scheduler.get_interval_minute()<<"\n";
 
-
-
+        
+        //dispense feed if the interval has elapsed
         if (scheduler.interval_elapsed()){
-            d1.dispense();
+            dispenser.dispense();
             printNextFeedingTime();
         }
+
+        // display the currently set feeding interval on the 4 digit 7 segment display in the format HH.MM
+        seven_seg_display.displayTime(scheduler.get_interval());
     
     }
 
 
 
-
+    seven_seg_display.release_pins();
     gpiod_line_release(servoLine);
     gpiod_line_release(motor_driver_en_line);
     gpiod_chip_close(chip);
     return 0;
     
-}
+} 
 
 
 

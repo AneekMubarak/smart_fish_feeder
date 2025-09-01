@@ -9,7 +9,7 @@ LDFLAGS = -lgpiod
 TARGET = feeder_main
 
 #src files
-SRCS = feeder_main.cpp FeedDispenser.cpp FeederScheduler.cpp
+SRCS = feeder_main.cpp FeedDispenser.cpp FeederScheduler.cpp SevenSegmentDriver.cpp
 
 #object files
 OBJS = $(SRCS:.cpp=.o)
