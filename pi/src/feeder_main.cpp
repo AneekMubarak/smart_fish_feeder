@@ -120,32 +120,30 @@ int main(){
         
         interval_hour = scheduler.get_interval_hour();
         interval_minute = scheduler.get_interval_minute();
-        
+
         if(minute_button.isPressed() && hour_button.isPressed()){ // press both buttons together to show the next feeding time instead of the interval
-            // TO BE IMPLEMENTED
             std::cout << "both\n";
-            
-            //prevent interval from incrementing in the case of a double press 
-            --interval_hour;
-            --interval_minute;
+        
+        seven_seg_display.displayTime(scheduler.get_next_feeding_time_as_interval());
+        } else {
+
+            seven_seg_display.displayTime(scheduler.get_interval());
         }
-        
-        
+
         // Handle pressing the increment hour button
-        if(hour_button.is_valid_press()){
+        if(hour_button.is_valid_press() && !minute_button.isPressed()){
             scheduler.update_feed_interval(++interval_hour,interval_minute);                
 
         }
         
         // Handle pressing the increment minute button
-        if(minute_button.is_valid_press()){
+        if(minute_button.is_valid_press() && !hour_button.isPressed()){
             scheduler.update_feed_interval(interval_hour,++interval_minute);
 
         }
-        
-        
-        std::cout << "Interval: " << scheduler.get_interval_hour() <<":"<<scheduler.get_interval_minute()<<"\n";
 
+        std::cout << "Interval: " << scheduler.get_interval_hour() <<":"<<scheduler.get_interval_minute()<<"\n";
+        
         
         //dispense feed if the interval has elapsed
         if (scheduler.interval_elapsed()){
@@ -153,8 +151,7 @@ int main(){
             printNextFeedingTime();
         }
 
-        // display the currently set feeding interval on the 4 digit 7 segment display in the format HH.MM
-        seven_seg_display.displayTime(scheduler.get_interval());
+
     
     }
 
